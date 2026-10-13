@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-paper: #f5f4ef;
+  --color-card: #ffffff;
+  --color-ink: #0e0f0c;
+  --color-ink-2: #2a2c27;
+  --color-muted: #63665e;
+  --color-line: #e3e1d9;
+  --color-line-2: #d3d0c5;
+  --color-accent: #145c3a;
+  --color-accent-ink: #0d3f27;
+  --color-lime: #d5f25c;
+  --color-warn: #a15c07;
+  --color-warn-bg: #fdf3e2;
+  --color-danger: #b42318;
+  --color-danger-bg: #fdecea;
+  --color-ok-bg: #e7f3ec;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  ::selection {
+    background: var(--color-lime);
+    color: var(--color-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+@utility container-x {
+  @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+}
+@utility btn {
+  @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg px-5 text-[15px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-ink text-white hover:bg-ink-2;
+}
+@utility btn-accent {
+  @apply btn bg-accent text-white hover:bg-accent-ink;
+}
+@utility btn-ghost {
+  @apply btn border border-line-2 bg-card text-ink hover:border-ink;
+}
+@utility btn-sm {
+  @apply h-9 px-3 text-sm;
+}
+@utility card {
+  @apply rounded-xl border border-line bg-card;
+}
+@utility label {
+  @apply mb-1.5 block text-[13px] font-medium text-ink-2;
+}
+@utility input {
+  @apply h-11 w-full rounded-lg border border-line-2 bg-card px-3 text-[15px] text-ink placeholder:text-muted/70 focus:border-ink focus:outline-none;
+}
+@utility eyebrow {
+  @apply font-mono text-[12px] uppercase tracking-[0.14em] text-muted;
+}
+@utility pill {
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+}
+@utility data-table {
+  @apply w-full min-w-[640px] text-left text-sm;
+  & th {
+    @apply border-b border-line px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-muted;
+  }
+  & td {
+    @apply border-b border-line px-3 py-3 align-top;
+  }
+}
