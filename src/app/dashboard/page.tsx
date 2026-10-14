@@ -5,6 +5,7 @@ import { StatusPill } from "@/components/StatusPill";
 import { requireUser } from "@/lib/auth";
 import { formatNaira } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
+import { orderTitle } from "@/lib/order-label";
 import type { Country, Order, Product, ProxyAccount } from "@/lib/types";
 
 /** Failed + refunded orders stay visible on the overview for a day. */
@@ -42,6 +43,7 @@ export default async function Overview() {
           <div className="flex flex-wrap gap-2">
             <Link href="/dashboard/wallet" className="btn-ghost btn-sm">Top up</Link>
             <Link href="/dashboard/buy" className="btn-primary btn-sm">Buy GB</Link>
+            <Link href="/dashboard/ports" className="btn-ghost btn-sm">Daily ports</Link>
           </div>
         </div>
         <div className="card p-6">
@@ -58,7 +60,7 @@ export default async function Overview() {
             {pend.map((o) => (
               <div key={o.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 text-sm">
                 <div>
-                  <p className="font-medium">{o.quantity_gb} GB {pname(o.product_id)}</p>
+                  <p className="font-medium">{orderTitle(o, pname)}</p>
                   <p className="text-muted">
                     {o.status === "refunded"
                       ? `We couldn't deliver this order, so ${formatNaira(o.total_kobo)} went back to your wallet. Try again or pick another country.`

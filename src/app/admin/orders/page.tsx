@@ -6,6 +6,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { formatNaira } from "@/lib/money";
 import { getProvider } from "@/lib/providers";
 import { createAdminClient } from "@/lib/supabase/server";
+import { orderTitle } from "@/lib/order-label";
 import type { Order } from "@/lib/types";
 import { refundOrderAction } from "../actions";
 
@@ -17,12 +18,19 @@ const TABS = [
   ["refunded", "Failed + refunded"],
   ["processing", "Stuck"],
 ] as const;
+const KINDS = [
+  ["all", "All products"],
+  ["gb", "Per-GB"],
+  ["port", "Daily ports"],
+] as const;
 
-export default async function AdminOrders({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
-  const { status = "all" } = await searchParams;
+export default async function AdminOrders({ searchParams }: { searchParams: Promise<{ status?: string; kind?: string }> }) {
+  const { status = "all", kind = "all" } = await searchParams;
   const db = createAdminClient();
   let q = db.from("orders").select("*").order("created_at", { ascending: false }).limit(100);
   if (status === "fulfilled" || status === "processing" || status === "refunded") q = q.eq("status", status);
+  if (kind === "gb") q = q.eq("kind", "gb");
+  if (kind === "port") q = q.in("kind", ["port", "port_renewal"]);
   const [{ data: orders }, { data: products }, { data: countries }] = await Promise.all([q, db.from("products").select("id,name"), db.from("countries").select("code,name")]);
   const list = (orders ?? []) as Order[];
   const ids = [...new Set(list.map((o) => o.user_id))];
@@ -35,11 +43,22 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
         title="Orders"
         subtitle="Orders are delivered instantly through each product's provider. Failed deliveries are refunded automatically."
       />
+      <div className="mb-3 flex gap-1 overflow-x-auto rounded-lg border border-line bg-card p-1 text-sm sm:w-fit">
+        {KINDS.map(([k, l]) => (
+          <Link
+            key={k}
+            href={`/admin/orders?status=${status}&kind=${k}`}
+            className={`flex-1 whitespace-nowrap rounded-md px-4 py-1.5 text-center sm:flex-none ${kind === k ? "bg-ink text-white" : "text-ink-2 hover:text-ink"}`}
+          >
+            {l}
+          </Link>
+        ))}
+      </div>
       <div className="mb-6 flex gap-1 overflow-x-auto rounded-lg border border-line bg-card p-1 text-sm sm:w-fit">
         {TABS.map(([k, l]) => (
           <Link
             key={k}
-            href={`/admin/orders?status=${k}`}
+            href={`/admin/orders?status=${k}&kind=${kind}`}
             className={`flex-1 whitespace-nowrap rounded-md px-4 py-1.5 text-center sm:flex-none ${status === k ? "bg-ink text-white" : "text-ink-2 hover:text-ink"}`}
           >
             {l}
@@ -59,7 +78,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
               <header className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
                 <div className="min-w-0">
                   <p className="font-semibold">
-                    {o.quantity_gb} GB {product?.name ?? o.product_id} · {country}
+                    {orderTitle(o, () => product?.name ?? o.product_id ?? "")} · {country}
                   </p>
                   <p className="mt-0.5 text-sm text-muted">
                     {email(o.user_id)} · {formatNaira(o.total_kobo)}

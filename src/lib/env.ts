@@ -34,6 +34,8 @@ export const proxiesSx = () => ({
   keyExpiryDays: opt("PROXIES_SX_KEY_EXPIRY_DAYS") ? Number(opt("PROXIES_SX_KEY_EXPIRY_DAYS")) : null,
   // Only for testing against a mock/staging server. Leave unset in production.
   apiBase: opt("PROXIES_SX_API_BASE"),
+  // Secret you set when registering the webhook (POST /reseller/webhooks { secret }). Signs X-Webhook-Signature.
+  webhookSecret: opt("PROXIES_SX_WEBHOOK_SECRET"),
 });
 
 export const dataimpulse = () => ({

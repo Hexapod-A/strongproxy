@@ -13,11 +13,14 @@ export function BuyForm({
   products,
   countries,
   stock,
+  paused = {},
   balanceKobo,
 }: {
   products: Product[];
   countries: Country[];
   stock: Record<string, ProductStock>;
+  /** Product ids paused by the low-balance guard ("temporarily unavailable"). */
+  paused?: Record<string, boolean>;
   balanceKobo: number;
 }) {
   const [state, action] = useActionState(buyAction, undefined);
@@ -46,7 +49,7 @@ export function BuyForm({
                 <input type="radio" name="product_id" value={p.id} checked={productId === p.id} onChange={() => setProductId(p.id)} className="sr-only" />
                 <span className="flex items-center justify-between">
                   <span className="font-semibold">{p.name}</span>
-                  <span className="text-sm font-medium">{formatNaira(p.price_per_gb_kobo)}/GB</span>
+                  <span className="text-sm font-medium">{paused[p.id] ? "Temporarily unavailable" : `${formatNaira(p.price_per_gb_kobo)}/GB`}</span>
                 </span>
                 <span className="mt-1.5 block text-sm text-muted">{p.description}</span>
               </label>
@@ -97,7 +100,9 @@ export function BuyForm({
         </dl>
         <div className="mt-5 space-y-3">
           <FormMessage state={state} />
-          {isOut(countryOut ? "" : country) ? (
+          {paused[productId] ? (
+            <p className="rounded-lg bg-warn-bg px-3 py-2 text-sm text-warn">{product?.name ?? "This type"} is temporarily unavailable. Check back soon.</p>
+          ) : isOut(countryOut ? "" : country) ? (
             <p className="rounded-lg bg-warn-bg px-3 py-2 text-sm text-warn">{product?.name ?? "This type"} is out of stock right now. Check back soon.</p>
           ) : short ? (
             <Link href="/dashboard/wallet" className="btn-primary w-full">Top up {formatNaira(total - balanceKobo)}</Link>

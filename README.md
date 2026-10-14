@@ -17,6 +17,10 @@ Stack: Next.js 16 (App Router, TypeScript) · Supabase (Postgres, Auth, RLS) · 
 - Dashboard: wallet balance, buy GB (type, country or "any", quantity), my proxies with copy buttons, a
   string generator (country, rotating/sticky, HTTP/SOCKS5, `host:port:user:pass` or URL), usage meter (live from the provider), top-up, order and transaction history.
 
+**Daily ports** (dedicated mobile port rented per day, Proxies.sx reseller ports API): see "Daily ports" below.
+- Buy: country (only countries with free ports), 1 / 7 / 30 days, HTTP or SOCKS5. Wallet charged, port created instantly, customer sees `host:port:user:pass` (switch HTTP/SOCKS5 port), a **Rotate IP** button and a personal **rotate link** for scripts.
+- Live countdown; **renew from the wallet** any time before expiry. Expired ports can't be renewed, so they disappear once the time is up.
+
 **Payments** (wallet-based)
 - Paystack: server initialises the transaction, webhook verifies `x-paystack-signature` (HMAC-SHA512 of the raw body), then re-checks the transaction with Paystack's verify API before crediting.
 - NOWPayments (USDT): hosted invoice priced in USD at an admin-set ₦/$ rate; IPN verified with `x-nowpayments-sig` (HMAC-SHA512 of the key-sorted JSON). Only `finished` payments are credited; partial payments and re-deposits are not auto-credited.
@@ -153,6 +157,55 @@ Reminder from the research: the DataImpulse reseller program needs a $50 deposit
 
 ---
 
+## Daily ports (Proxies.sx per-day dedicated mobile ports)
+
+**What Proxies.sx actually charges (read 14 Oct 2026):** there is **no per-day or per-country port price** on their live pages or public API.
+Their pricing page says *"Endpoints stay free. Create ports anytime. You never pay per port or per rotation"*; their API reference
+(`GET https://api.proxies.sx/v1/reseller/docs/llm`) says wholesale is metered **$4/GB** of traffic (volume discount down to $2.40/GB) and port
+creation charges your reseller balance. So the real cost is the same $4/GB in US, UK, Canada, Australia, Germany, France, Spain, Netherlands and Norway,
+paid as the customer uses data. The `$2/day` in their Quick Start is labelled an example. (Their older Quick Start also says creation costs
+`basePrice × days`; use **Admin → Daily ports → Check live cost** with your key to see what your account is really charged.)
+
+That's why every plan carries a **data allowance** that we set as the customer's Proxies.sx traffic quota. An "unlimited" port means you pay for every GB.
+
+| Plan | Data included | Your cost at $4/GB | Seeded price (≈2× at ₦1,330/$) |
+|------|---------------|--------------------|-------------------------------|
+| 1 day | 2 GB | $8 | ₦21,280 |
+| 7 days | 10 GB | $40 | ₦106,400 |
+| 30 days | 30 GB | $120 | ₦319,200 |
+
+All editable in **Admin → Daily ports** (price, GB, on/off; GB 0 = no cap), plus the ₦/$ rate and the $/GB and $/day costs used for the suggested price.
+
+**Flow** (`src/lib/services/ports.ts`, `src/lib/providers/proxiessx-ports.ts`, migration `20261014000003_day_ports.sql`):
+1. Refused **before charging** if: no `PROXIES_SX_API_KEY`, daily ports switched off, plan/country disabled, country out of stock, no Proxies.sx country id, or the low-balance auto-pause is on.
+2. `place_port_order` debits the wallet and creates the order (`kind = 'port'`) in one transaction.
+3. Proxies.sx calls: find/create our customer (`GET /reseller/customers/by-external-id/:userId`, `POST /reseller/customers`), `PATCH /reseller/customers/:id/quota { portSlotsDelta: 1, trafficGBDelta }`, `POST /reseller/ports { customerId, countryId, days }` (order id sent as `Idempotency-Key`).
+4. `fulfil_port_order` stores server IP, HTTP + SOCKS5 ports, login, password and expiry.
+5. **Any error →** `fail_and_refund_order` (full refund, same transaction), the port/slot is cleaned up upstream, you get a Telegram/email alert.
+- **Renew:** `POST /reseller/ports/:id/extend { days }`, only while the port is active and not expired; failure is refunded the same way.
+- **Rotate:** `POST /reseller/ports/:id/rotate` from the dashboard button or the customer's link `GET|POST /api/ports/rotate/<secret token>` (6 per minute per port).
+- **Expiry:** Proxies.sx has **no `port.expired` webhook**, so ports are re-read (`GET /reseller/ports/:id`) when the customer opens Daily ports (at most every 5 minutes); a port deleted upstream or past its expiry stops showing.
+- **Webhook** `POST /api/webhooks/proxiessx`: verifies `X-Webhook-Signature: sha256=HMAC-SHA256(body, PROXIES_SX_WEBHOOK_SECRET)` and applies `port.deleted`, `port.suspended`, `port.unsuspended`, `port.rotated`. Register it with `POST /reseller/webhooks { url, events, secret }`.
+- **Admin:** daily-port orders appear in **Orders** (filter "Daily ports"), with the same refund tools.
+
+**Not confirmed (test with a live key and one 1-day port before selling):**
+1. **Country ids / stock.** Their docs say `countryId` comes "from device availability" but name no reseller endpoint. We call `GET /countries/with-devices?pool=dedicated` (what their own dashboard uses) with the API key and parse it defensively. If that fails, Admin → Daily ports shows "couldn't be read": paste the Proxies.sx country id per country there and those countries become buyable.
+2. **Cost:** per-GB-only vs `basePrice × days` (see above). If calculate-price shows a day rate, enter it as "Port cost per day" so suggested prices and the auto-pause include it.
+3. **Extend body:** the LLM reference says `{ "days": N }`, the HTML reference shows `{ "hours": 720 }`. We send `days`.
+4. Whether the customer **traffic quota** hard-stops traffic when used up, and whether an API key needs `ports:rotate` / `billing:read` scopes (create the key with all of: `customers:read customers:write ports:read ports:write ports:rotate billing:read`).
+5. `expiresAt` format (examples use epoch ms; ISO is accepted too). Idempotency-Key on ports is not documented (sent anyway, harmless).
+
+## Low-balance auto-pause
+
+Every Proxies.sx sale (per-GB keys **and** daily ports) is paid from **your** Proxies.sx balance. The app reads it from `GET /account/summary`
+(documented in their API reference; the API-key scope it needs is unconfirmed), cached 60 seconds.
+- Balance below your threshold (default **$5**) → Proxies.sx products and daily ports show **"temporarily unavailable"**, the buy button is disabled, and you get one Telegram/email alert. Sales **resume on their own** (with a "resumed" alert) once the balance is back above the threshold.
+- Balance below what one order would cost (GB × $/GB, plus days × $/day for ports) → that order is refused with nothing charged, and you're alerted.
+- Re-checked right before every wallet charge. If the balance can't be read, sales stay open and the auto-refund remains the safety net.
+- **Admin → Daily ports**: on/off toggle (default ON), threshold, cost settings, current balance.
+- DataImpulse products are not affected.
+
+
 ## Why NOWPayments for crypto
 
 - Its API docs (read 13 Oct 2026, https://documenter.getpostman.com/view/7907941/2s93JusNJt) document exactly what this needs: a hosted invoice (`POST /v1/invoice`) and an **HMAC-SHA512-signed IPN webhook**, plus a sandbox for testing. No custom checkout UI to build.
@@ -190,7 +243,7 @@ npm run lint
 npm test        # needs the local Supabase DB on 127.0.0.1:54322 (or TEST_DATABASE_URL); creates a throwaway database "sp_test"
 npm run build
 ```
-The tests run the real migration on Postgres and cover: Paystack webhook → balance (valid, replayed, bad signature, short amount, failed verify), NOWPayments IPN, purchase → Proxies.sx adapter with a mocked API (capped key minted with the order id as idempotency key, reorder tops up + re-enables the same key, residential `peer` pool, usage), provider failure → failed order + **automatic full refund** + admin alert, out-of-stock countries refused with nothing charged, provider without keys refused before charging, purchase → DataImpulse adapter (create, then top-up of the same sub-user; failure → auto-refund), Proxies.sx proxy-string DSL and stock parsing, banned/inactive/insufficient-balance rules, admin credit/debit, rate limiting, and RLS (customers can't read others' rows or write balances).
+The tests run the real migration on Postgres and cover: Paystack webhook → balance (valid, replayed, bad signature, short amount, failed verify), NOWPayments IPN, purchase → Proxies.sx adapter with a mocked API (capped key minted with the order id as idempotency key, reorder tops up + re-enables the same key, residential `peer` pool, usage), provider failure → failed order + **automatic full refund** + admin alert, out-of-stock countries refused with nothing charged, provider without keys refused before charging, purchase → DataImpulse adapter (create, then top-up of the same sub-user; failure → auto-refund), Proxies.sx proxy-string DSL and stock parsing, banned/inactive/insufficient-balance rules, admin credit/debit, rate limiting, RLS (customers can't read others' rows or write balances), and daily ports against a mocked Proxies.sx ports API (`test/ports.test.ts`: buy, renew, rotate, expiry sync, signed webhooks, failure → full refund + alert, out-of-stock and disabled countries refused with nothing charged, missing country id, low-balance auto-pause for ports and per-GB, fail-open). 51 tests.
 
 ---
 
@@ -200,7 +253,7 @@ RAM budget: the app container idles around 120–200 MB (Node is capped at 256 M
 
 ### 1. Supabase
 You already self-host Supabase on Coolify. In that Supabase:
-1. **SQL editor** → paste and run `supabase/migrations/20261013000001_init.sql`, then `supabase/migrations/20261013000002_providers_no_manual.sql`, then `supabase/seed.sql`. (Already ran the first one? Just run the second; it refunds anything left in the old manual queue.)
+1. **SQL editor** → paste and run `supabase/migrations/20261013000001_init.sql`, then `supabase/migrations/20261013000002_providers_no_manual.sql`, then `supabase/migrations/20261014000003_day_ports.sql` (daily ports + auto-pause; seeds the plans and settings), then `supabase/seed.sql`. (Already ran some? Run only the ones you haven't, in order; the second refunds anything left in the old manual queue.)
 2. **Authentication → URL configuration**: Site URL = `https://YOUR_DOMAIN`; add `https://YOUR_DOMAIN/auth/callback` to redirect URLs.
 3. **Authentication → Providers → Email**: keep "Confirm email" on for production (configure SMTP in Supabase so confirmation emails go out). Customers land on `/auth/callback` after confirming.
 4. Copy the **API URL**, **anon key** and **service_role key** (in Coolify they're in your Supabase service's environment variables).
@@ -230,6 +283,8 @@ You already self-host Supabase on Coolify. In that Supabase:
 2. Copy your proxy username (`psx_…`) into `PROXIES_SX_PROXY_USERNAME` and create a reseller API key into `PROXIES_SX_API_KEY` (see https://www.proxies.sx/reseller-docs, Step 1).
 3. Redeploy. Admin → Overview shows Proxies.sx **Configured** for Mobile and Residential, plus today's out-of-stock countries.
 4. Buy 1 GB yourself from the site and check the key in the Proxies.sx dashboard (see "Not confirmed" above).
+5. **Daily ports:** give the API key the scopes `customers:read customers:write ports:read ports:write ports:rotate billing:read`. Open **Admin → Daily ports**: check the balance shows, the countries show "In stock" (or paste country ids), press **Check live cost**, adjust prices. Then buy one 1-day port yourself and test the rotate link.
+6. **Webhook (optional):** pick a long random secret, put it in `PROXIES_SX_WEBHOOK_SECRET`, redeploy, then register `https://<your-site>/api/webhooks/proxiessx` with `POST /reseller/webhooks` (events `port.deleted`, `port.suspended`, `port.unsuspended`, `port.rotated`, same secret).
 
 ### 6. DataImpulse (optional, when you have the $50)
 1. Complete KYC, sign the reseller agreement, deposit $50.

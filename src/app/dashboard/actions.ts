@@ -22,6 +22,7 @@ const ERRORS: Record<string, string> = {
   country_unavailable: "That country isn't available right now.",
   country_out_of_stock: "That country is out of stock right now. Pick another country or \"Any country\".",
   provider_not_configured: "This product can't be delivered right now. We've been alerted. Your wallet was not charged.",
+  sales_paused: "This product is temporarily unavailable. Your wallet was not charged. Try again a little later.",
 };
 
 const buySchema = z.object({

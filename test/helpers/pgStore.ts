@@ -21,7 +21,7 @@ export async function freshDatabase(): Promise<pg.Pool> {
   const url = new URL(ADMIN_URL);
   url.pathname = "/" + DB_NAME;
   const pool = new pg.Pool({ connectionString: url.toString(), max: 4 });
-  for (const f of ["test/sql/supabase_shim.sql", "supabase/migrations/20261013000001_init.sql", "supabase/migrations/20261013000002_providers_no_manual.sql", "supabase/seed.sql"]) {
+  for (const f of ["test/sql/supabase_shim.sql", "supabase/migrations/20261013000001_init.sql", "supabase/migrations/20261013000002_providers_no_manual.sql", "supabase/migrations/20261014000003_day_ports.sql", "supabase/seed.sql"]) {
     await pool.query(fs.readFileSync(path.join(ROOT, f), "utf8"));
   }
   return pool;
@@ -64,6 +64,26 @@ export function pgStore(pool: pg.Pool): Store {
         (await one("select * from proxy_accounts where user_id = $1 and product_id = $2 and provider = $3 order by created_at limit 1", [userId, productId, provider])) ??
         null
       );
+    },
+    async setSetting(key, value) {
+      await pool.query("insert into settings (key, value) values ($1, $2) on conflict (key) do update set value = excluded.value, updated_at = now()", [key, JSON.stringify(value)]);
+    },
+    async getPortPlan(id) {
+      return (await one("select * from port_plans where id = $1", [id])) ?? null;
+    },
+    async getCountry(code) {
+      return (await one("select * from countries where code = $1", [code])) ?? null;
+    },
+    async getDedicatedPort(id) {
+      return (await one("select * from dedicated_ports where id = $1", [id])) ?? null;
+    },
+    async findDedicatedPort(by) {
+      return "rotateToken" in by
+        ? ((await one("select * from dedicated_ports where rotate_token = $1", [by.rotateToken])) ?? null)
+        : ((await one("select * from dedicated_ports where provider = $1 and external_id = $2", [by.provider, by.externalId])) ?? null);
+    },
+    async getProviderCustomer(userId, provider) {
+      return (await one<{ external_id: string }>("select external_id from provider_customers where user_id = $1 and provider = $2", [userId, provider]))?.external_id ?? null;
     },
   };
 }

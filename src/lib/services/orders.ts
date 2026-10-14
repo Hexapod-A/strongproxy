@@ -1,10 +1,11 @@
-import { getProvider, getProviders } from "@/lib/providers";
+import { getPortsApi, getProvider, getProviders } from "@/lib/providers";
 import type { ProxyProvider } from "@/lib/providers/types";
 import { formatNaira } from "@/lib/money";
 import type { Notifier } from "@/lib/notify";
 import { productStock } from "@/lib/stock";
 import { StoreError, type Store } from "@/lib/store";
 import type { Order } from "@/lib/types";
+import { gbOrderCostUsd, guardSettings, refuseIfPaused, type BalanceReader } from "./balance-guard";
 
 export type PurchaseInput = {
   userId: string;
@@ -22,6 +23,8 @@ export type Deps = {
   store: Store;
   notify: Notifier;
   providers?: ProxyProvider[];
+  /** Proxies.sx balance source for low-balance auto-pause (defaults to the env-configured reseller API). */
+  balance?: BalanceReader;
 };
 
 /**
@@ -50,6 +53,12 @@ export async function purchase(deps: Deps, input: PurchaseInput): Promise<Purcha
   const stock = await productStock(provider, product.provider_pool, input.countryCode ? [input.countryCode] : []);
   if (stock.live && stock.countries[input.countryCode ?? ""] === "out_of_stock") throw new StoreError("country_out_of_stock");
 
+  // Low-balance auto-pause: Proxies.sx sales are paid from John's Proxies.sx balance. Re-checked right before charging.
+  if (provider.id === "proxies_sx") {
+    const gs = await guardSettings(store);
+    await refuseIfPaused({ store, notify, reader: deps.balance ?? getPortsApi() }, gbOrderCostUsd(gs, input.quantityGb), `${input.quantityGb} GB ${product.name}`);
+  }
+
   const order = await store.rpc<Order>("place_order", {
     p_user_id: input.userId,
     p_product_id: input.productId,
@@ -57,7 +66,7 @@ export async function purchase(deps: Deps, input: PurchaseInput): Promise<Purcha
     p_quantity_gb: input.quantityGb,
   });
 
-  const existing = await store.findProxyAccount(order.user_id, order.product_id, provider.id);
+  const existing = await store.findProxyAccount(order.user_id, input.productId, provider.id);
   try {
     const r = await provider.provision({
       customerRef: order.user_id,

@@ -4,6 +4,7 @@ import { StatusPill } from "@/components/StatusPill";
 import { requireUser } from "@/lib/auth";
 import { formatNaira } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
+import { orderGb, orderTitle } from "@/lib/order-label";
 import type { Order } from "@/lib/types";
 
 export const metadata = { title: "Orders" };
@@ -42,7 +43,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
             {list.map((o) => (
               <li key={o.id} className="px-4 py-3.5 text-sm">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-medium">{o.quantity_gb} GB {pname(o.product_id)}</span>
+                  <span className="font-medium">{orderTitle(o, pname)}</span>
                   <StatusPill status={o.status} failed={Boolean(o.failure_reason)} />
                 </div>
                 <div className="mt-1 flex justify-between text-muted">
@@ -61,9 +62,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 {list.map((o) => (
                   <tr key={o.id}>
                     <td className="whitespace-nowrap text-muted">{new Date(o.created_at).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" })}</td>
-                    <td className="font-medium">{pname(o.product_id)}</td>
+                    <td className="font-medium">{o.kind === "gb" || !o.kind ? pname(o.product_id ?? "") : orderTitle(o, pname)}</td>
                     <td>{cname(o.country_code)}</td>
-                    <td>{o.quantity_gb}</td>
+                    <td>{orderGb(o)}</td>
                     <td className="font-mono">{formatNaira(o.total_kobo)}</td>
                     <td><StatusPill status={o.status} failed={Boolean(o.failure_reason)} /></td>
                   </tr>

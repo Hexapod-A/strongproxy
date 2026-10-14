@@ -2,6 +2,7 @@ import { dataimpulse, proxiesSx } from "@/lib/env";
 import { DataImpulseProvider } from "./dataimpulse";
 import { genericProxyString } from "./generic";
 import { ProxiesSxProvider } from "./proxiessx";
+import { ProxiesSxPortsApi } from "./proxiessx-ports";
 import type { AccountForString, ProxyProvider, ProxyStringOptions } from "./types";
 
 /**
@@ -20,6 +21,16 @@ export function getProviders(): ProxyProvider[] {
     cached = [new ProxiesSxProvider(proxiesSx()), new DataImpulseProvider(dataimpulse())];
   }
   return cached;
+}
+
+let portsApi: ProxiesSxPortsApi | null = null;
+/** Proxies.sx reseller ports API (daily ports + account balance). Same PROXIES_SX_API_KEY as the per-GB adapter. */
+export function getPortsApi(): ProxiesSxPortsApi {
+  if (!portsApi) {
+    const c = proxiesSx();
+    portsApi = new ProxiesSxPortsApi({ apiKey: c.apiKey, apiBase: c.apiBase });
+  }
+  return portsApi;
 }
 
 export function getProvider(id: string, providers = getProviders()): ProxyProvider | undefined {

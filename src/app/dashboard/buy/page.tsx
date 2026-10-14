@@ -1,6 +1,8 @@
 import { PageTitle } from "@/components/PageTitle";
-import { requireUser } from "@/lib/auth";
-import { getProvider } from "@/lib/providers";
+import { adminStore, requireUser } from "@/lib/auth";
+import { notifyAdmin } from "@/lib/notify";
+import { getPortsApi, getProvider } from "@/lib/providers";
+import { salesStatus } from "@/lib/services/balance-guard";
 import { productStock, type ProductStock } from "@/lib/stock";
 import { createClient } from "@/lib/supabase/server";
 import type { Country, Product } from "@/lib/types";
@@ -23,10 +25,15 @@ export default async function BuyPage() {
     prods.map(async (p) => [p.id, await productStock(getProvider(p.provider), p.provider_pool, ctry.map((c) => c.code))] as const),
   );
   const stock: Record<string, ProductStock> = Object.fromEntries(stockEntries);
+  // Low-balance auto-pause: Proxies.sx products show "temporarily unavailable" while John's Proxies.sx balance is low.
+  const psxPaused = prods.some((p) => p.provider === "proxies_sx")
+    ? (await salesStatus({ store: adminStore(), notify: notifyAdmin, reader: getPortsApi() })).paused
+    : false;
+  const paused: Record<string, boolean> = Object.fromEntries(prods.map((p) => [p.id, psxPaused && p.provider === "proxies_sx"]));
   return (
     <>
       <PageTitle title="Buy GB" subtitle="Paid from your wallet. Delivered instantly. One price per GB in every country." />
-      <BuyForm products={prods} countries={ctry} stock={stock} balanceKobo={s.profile.balance_kobo} />
+      <BuyForm products={prods} countries={ctry} stock={stock} paused={paused} balanceKobo={s.profile.balance_kobo} />
     </>
   );
 }

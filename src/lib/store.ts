@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Order, Product, Profile, ProxyAccount } from "./types";
+import type { Country, DedicatedPort, Order, PortPlan, Product, Profile, ProxyAccount } from "./types";
 
 /**
  * The narrow data interface the business services need. Production uses Supabase (service role);
@@ -13,6 +13,12 @@ export interface Store {
   getProfile(id: string): Promise<Profile | null>;
   getOrder(id: string): Promise<Order | null>;
   findProxyAccount(userId: string, productId: string, provider: string): Promise<ProxyAccount | null>;
+  setSetting(key: string, value: unknown): Promise<void>;
+  getPortPlan(id: string): Promise<PortPlan | null>;
+  getCountry(code: string): Promise<Country | null>;
+  getDedicatedPort(id: string): Promise<DedicatedPort | null>;
+  findDedicatedPort(by: { provider: string; externalId: string } | { rotateToken: string }): Promise<DedicatedPort | null>;
+  getProviderCustomer(userId: string, provider: string): Promise<string | null>;
 }
 
 export class StoreError extends Error {
@@ -38,6 +44,10 @@ export function errorCode(e: unknown): string {
     "profile_not_found",
     "proxy_account_not_found",
     "zero_amount",
+    "plan_unavailable",
+    "invalid_protocol",
+    "port_not_found",
+    "port_not_renewable",
   ];
   return known.find((k) => msg.includes(k)) ?? "unknown_error";
 }
@@ -76,6 +86,32 @@ export function supabaseStore(db: SupabaseClient): Store {
         .limit(1)
         .maybeSingle();
       return (data as ProxyAccount) ?? null;
+    },
+    async setSetting(key, value) {
+      const { error } = await db.from("settings").upsert({ key, value, updated_at: new Date().toISOString() });
+      if (error) throw new StoreError(error.message);
+    },
+    async getPortPlan(id) {
+      const { data } = await db.from("port_plans").select("*").eq("id", id).maybeSingle();
+      return (data as PortPlan) ?? null;
+    },
+    async getCountry(code) {
+      const { data } = await db.from("countries").select("*").eq("code", code).maybeSingle();
+      return (data as Country) ?? null;
+    },
+    async getDedicatedPort(id) {
+      const { data } = await db.from("dedicated_ports").select("*").eq("id", id).maybeSingle();
+      return (data as DedicatedPort) ?? null;
+    },
+    async findDedicatedPort(by) {
+      let q = db.from("dedicated_ports").select("*");
+      q = "rotateToken" in by ? q.eq("rotate_token", by.rotateToken) : q.eq("provider", by.provider).eq("external_id", by.externalId);
+      const { data } = await q.maybeSingle();
+      return (data as DedicatedPort) ?? null;
+    },
+    async getProviderCustomer(userId, provider) {
+      const { data } = await db.from("provider_customers").select("external_id").eq("user_id", userId).eq("provider", provider).maybeSingle();
+      return (data?.external_id as string | undefined) ?? null;
     },
   };
 }

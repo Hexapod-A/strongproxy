@@ -8,6 +8,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const nav = [
     { href: "/dashboard", label: "Overview" },
     { href: "/dashboard/buy", label: "Buy GB" },
+    { href: "/dashboard/ports", label: "Daily ports" },
     { href: "/dashboard/wallet", label: "Wallet" },
     { href: "/dashboard/orders", label: "Orders" },
     ...(s.isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
