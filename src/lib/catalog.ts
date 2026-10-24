@@ -4,8 +4,8 @@ import type { Country, Product } from "@/lib/types";
 
 // Shown only if the database is unreachable (e.g. first boot before migrations). Mirrors supabase/seed.sql.
 const FALLBACK_PRODUCTS: Product[] = [
-  { id: "mobile", name: "Mobile", description: "Real 4G/5G carrier IPs. Highest trust for social and app traffic.", price_per_gb_kobo: 1000000, provider_pool: "mobile", provider: "proxies_sx", min_gb: 1, max_gb: 100, is_active: true, sort_order: 1 },
-  { id: "residential", name: "Residential", description: "Home ISP IPs in the country you pick. Rotating or sticky.", price_per_gb_kobo: 650000, provider_pool: "residential", provider: "proxies_sx", min_gb: 1, max_gb: 500, is_active: true, sort_order: 2 },
+  { id: "mobile", name: "Mobile", description: "Real 4G/5G carrier IPs. Highest trust for social and app traffic.", price_per_gb_kobo: 700000, provider_pool: "mobile", provider: "proxies_sx", min_gb: 1, max_gb: 100, is_active: true, sort_order: 1 },
+  { id: "residential", name: "Residential", description: "Home ISP IPs in the country you pick. Rotating or sticky.", price_per_gb_kobo: 700000, provider_pool: "residential", provider: "proxies_sx", min_gb: 1, max_gb: 500, is_active: true, sort_order: 2 },
 ];
 const FALLBACK_COUNTRIES: Country[] = [
   ["us", "United States"], ["gb", "United Kingdom"], ["ca", "Canada"], ["au", "Australia"], ["de", "Germany"],

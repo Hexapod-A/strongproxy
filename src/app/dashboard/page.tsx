@@ -4,6 +4,7 @@ import { ProxyCard } from "@/components/ProxyCard";
 import { StatusPill } from "@/components/StatusPill";
 import { requireUser } from "@/lib/auth";
 import { formatNaira } from "@/lib/money";
+import { DAILY_PORTS_ENABLED } from "@/lib/features";
 import { createClient } from "@/lib/supabase/server";
 import { orderTitle } from "@/lib/order-label";
 import type { Country, Order, Product, ProxyAccount } from "@/lib/types";
@@ -43,7 +44,7 @@ export default async function Overview() {
           <div className="flex flex-wrap gap-2">
             <Link href="/dashboard/wallet" className="btn-ghost btn-sm">Top up</Link>
             <Link href="/dashboard/buy" className="btn-primary btn-sm">Buy GB</Link>
-            <Link href="/dashboard/ports" className="btn-ghost btn-sm">Daily ports</Link>
+            {DAILY_PORTS_ENABLED && <Link href="/dashboard/ports" className="btn-ghost btn-sm">Daily ports</Link>}
           </div>
         </div>
         <div className="card p-6">

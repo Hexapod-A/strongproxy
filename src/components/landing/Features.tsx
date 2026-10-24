@@ -1,5 +1,5 @@
 import type { Country } from "@/lib/types";
-import { IconBolt, IconChart, IconGlobe, IconPhone, IconPlug, IconRotate, IconWallet } from "./Icons";
+import { IconBolt, IconChart, IconGlobe, IconPlug, IconRotate, IconWallet } from "./Icons";
 
 function Card({ icon, title, text, children, className = "" }: { icon: React.ReactNode; title: string; text: string; children?: React.ReactNode; className?: string }) {
   return (
@@ -92,22 +92,6 @@ export function Features({ countries, flags }: { countries: Country[]; flags: Re
           </Card>
         </div>
 
-        <div data-reveal className="mt-4 flex flex-col gap-6 rounded-2xl border border-lime/25 bg-lime/[0.06] p-6 transition-colors duration-300 hover:border-lime/50 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-          <div className="flex gap-4">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-lime text-ink"><IconPhone /></span>
-            <div>
-              <h3 className="text-lg font-semibold">Daily dedicated mobile ports</h3>
-              <p className="mt-1 max-w-xl text-[15px] text-white/60">
-                A mobile port that&rsquo;s yours alone, on 1, 7 or 30-day plans with a data allowance. Change your IP any time with a
-                button or a rotate link.
-              </p>
-            </div>
-          </div>
-          <a href="/dashboard/ports" className="btn-lime shrink-0 group">
-            See port plans
-            <span aria-hidden className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-          </a>
-        </div>
       </div>
     </section>
   );

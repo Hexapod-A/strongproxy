@@ -159,6 +159,8 @@ Reminder from the research: the DataImpulse reseller program needs a $50 deposit
 
 ## Daily ports (Proxies.sx per-day dedicated mobile ports)
 
+> **Switched off (Oct 24 2026).** StrongProxy sells per GB only, at ₦7,000/GB for mobile and residential. Daily ports are hidden from every page and menu, and `/dashboard/ports` redirects to Buy GB. To turn them back on, set `DAILY_PORTS_ENABLED = true` in `src/lib/features.ts` and set `ports_enabled` back to `true` in the `settings` table.
+
 **What Proxies.sx actually charges (read 14 Oct 2026):** there is **no per-day or per-country port price** on their live pages or public API.
 Their pricing page says *"Endpoints stay free. Create ports anytime. You never pay per port or per rotation"*; their API reference
 (`GET https://api.proxies.sx/v1/reseller/docs/llm`) says wholesale is metered **$4/GB** of traffic (volume discount down to $2.40/GB) and port

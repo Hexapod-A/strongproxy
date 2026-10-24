@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { PageTitle } from "@/components/PageTitle";
+import { DAILY_PORTS_ENABLED } from "@/lib/features";
 import { adminStore, requireUser } from "@/lib/auth";
 import { notifyAdmin } from "@/lib/notify";
 import { getPortsApi } from "@/lib/providers";
@@ -12,6 +14,7 @@ export const metadata = { title: "Buy a daily port" };
 export const dynamic = "force-dynamic";
 
 export default async function BuyPortPage() {
+  if (!DAILY_PORTS_ENABLED) redirect("/dashboard/buy");
   const s = await requireUser();
   const db = createAdminClient();
   const [{ data: plans }, { data: countries }, { data: enabled }] = await Promise.all([

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { adminStore, requireUser } from "@/lib/auth";
 import { formatNaira } from "@/lib/money";
+import { DAILY_PORTS_ENABLED } from "@/lib/features";
 import { notifyAdmin } from "@/lib/notify";
 import { getPortsApi } from "@/lib/providers";
 import { buyPort, renewPort, rotatePort } from "@/lib/services/ports";
@@ -36,6 +37,7 @@ const buySchema = z.object({
 
 export async function buyPortAction(_: PortActionState, form: FormData): Promise<PortActionState> {
   const s = await requireUser();
+  if (!DAILY_PORTS_ENABLED) return { error: ERRORS.product_unavailable };
   const p = buySchema.safeParse({ plan_id: form.get("plan_id"), country: form.get("country"), protocol: form.get("protocol") });
   if (!p.success) return { error: "Pick a country, a duration and a protocol." };
   const store = adminStore();

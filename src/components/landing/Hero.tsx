@@ -19,7 +19,7 @@ export function Hero({ products, countries, flags }: { products: Product[]; coun
             className="group inline-flex items-center gap-2 rounded-full border border-line-2 bg-card py-1.5 pl-1.5 pr-3.5 text-[13px] text-ink-2 transition-[border-color,transform,translate,scale] duration-200 hover:-translate-y-0.5 hover:border-ink"
           >
             <span className="rounded-full bg-lime px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink">New</span>
-            Daily dedicated mobile ports are here
+            One price per GB, mobile or residential
             <IconArrow className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
           </Link>
         </div>
@@ -60,7 +60,7 @@ export function Hero({ products, countries, flags }: { products: Product[]; coun
               <aside className="hidden border-r border-white/10 p-4 md:block">
                 <p className="px-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white/35">Menu</p>
                 <ul className="mt-2 space-y-0.5 text-[13px]">
-                  {["Overview", "Buy GB", "Daily ports", "Wallet", "Orders"].map((l) => (
+                  {["Overview", "Buy GB", "Wallet", "Orders"].map((l) => (
                     <li key={l} className={`rounded-md px-2 py-1.5 ${l === "Buy GB" ? "bg-white/10 text-white" : "text-white/55"}`}>{l}</li>
                   ))}
                 </ul>

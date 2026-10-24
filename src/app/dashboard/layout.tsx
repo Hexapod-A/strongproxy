@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/AppShell";
 import { requireUser } from "@/lib/auth";
+import { DAILY_PORTS_ENABLED } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const nav = [
     { href: "/dashboard", label: "Overview" },
     { href: "/dashboard/buy", label: "Buy GB" },
-    { href: "/dashboard/ports", label: "Daily ports" },
+    ...(DAILY_PORTS_ENABLED ? [{ href: "/dashboard/ports", label: "Daily ports" }] : []),
     { href: "/dashboard/wallet", label: "Wallet" },
     { href: "/dashboard/orders", label: "Orders" },
     ...(s.isAdmin ? [{ href: "/admin", label: "Admin" }] : []),

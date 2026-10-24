@@ -1,8 +1,8 @@
 -- Seed: products, countries, default settings. Safe to re-run.
 -- provider: proxies_sx (default) or dataimpulse; switch per product in Admin > Catalog.
 insert into public.products (id, name, description, price_per_gb_kobo, provider_pool, provider, min_gb, max_gb, is_active, sort_order) values
-  ('mobile', 'Mobile', 'Real 4G/5G carrier IPs. Highest trust for social and app traffic.', 1000000, 'mobile', 'proxies_sx', 1, 100, true, 1),
-  ('residential', 'Residential', 'Home ISP IPs in the country you pick. Rotating or sticky.', 650000, 'residential', 'proxies_sx', 1, 500, true, 2),
+  ('mobile', 'Mobile', 'Real 4G/5G carrier IPs. Highest trust for social and app traffic.', 700000, 'mobile', 'proxies_sx', 1, 100, true, 1),
+  ('residential', 'Residential', 'Home ISP IPs in the country you pick. Rotating or sticky.', 700000, 'residential', 'proxies_sx', 1, 500, true, 2),
   ('datacenter', 'Datacenter', 'Fast, cheap IPs for bulk scraping. Coming soon.', 300000, 'datacenter', 'dataimpulse', 1, 1000, false, 3)
 on conflict (id) do nothing;
 

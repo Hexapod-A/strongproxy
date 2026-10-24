@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { DAILY_PORTS_ENABLED } from "@/lib/features";
 import { PageTitle } from "@/components/PageTitle";
 import { PortCard } from "@/components/PortCard";
 import { adminStore, requireUser } from "@/lib/auth";
@@ -19,6 +21,7 @@ function stillRunning(ports: DedicatedPort[]) {
 }
 
 export default async function PortsPage({ searchParams }: { searchParams: Promise<{ new?: string }> }) {
+  if (!DAILY_PORTS_ENABLED) redirect("/dashboard/buy");
   const s = await requireUser();
   const { new: fresh } = await searchParams;
   const db = createAdminClient();
