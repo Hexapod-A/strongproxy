@@ -163,7 +163,7 @@ describe("purchase → Proxies.sx adapter (mocked API, instant delivery)", () =>
     expect(r1.outcome).toBe("fulfilled");
     expect(r1.order).toMatchObject({ status: "fulfilled", provider: "proxies_sx" });
     expect(notify).not.toHaveBeenCalled();
-    expect(await balance(pool, u)).toBe(1_000_000);
+    expect(await balance(pool, u)).toBe(1_600_000);
 
     const mint = api.calls.find((c) => c.path === "/reseller/pool-keys" && c.method === "POST");
     expect(mint).toMatchObject({ apiKey: "psx_api_test", idem: `mint_${r1.order.id}`, body: { label: `strongproxy:${u}:mobile`, trafficCapGB: 2 } });
@@ -193,7 +193,7 @@ describe("purchase → Proxies.sx adapter (mocked API, instant delivery)", () =>
   it("residential uses the peer pool with the residential ip-type filter", async () => {
     const api = mockProxiesSx();
     const u = await createUser(pool, "psx-res@example.com");
-    await fund(u, 650_000);
+    await fund(u, 700_000);
     const r = await purchase({ store, notify: vi.fn(async () => ({ telegram: false, email: false })), providers: [psx(api)] }, { userId: u, productId: "residential", countryCode: "de", quantityGb: 1 });
     expect(r.outcome).toBe("fulfilled");
     const acc = (await pool.query("select username from proxy_accounts where user_id = $1", [u])).rows[0];
@@ -238,12 +238,12 @@ describe("purchase → Proxies.sx adapter (mocked API, instant delivery)", () =>
 
   it("refuses before charging when the product's provider has no keys, and alerts the admin", async () => {
     const u = await createUser(pool, "psx-nokeys@example.com");
-    await fund(u, 650_000);
+    await fund(u, 700_000);
     const notify = vi.fn(async () => ({ telegram: true, email: false }));
     await expect(
       purchase({ store, notify, providers: [new ProxiesSxProvider({})] }, { userId: u, productId: "residential", countryCode: null, quantityGb: 1 }),
     ).rejects.toThrow("provider_not_configured");
-    expect(await balance(pool, u)).toBe(650_000);
+    expect(await balance(pool, u)).toBe(700_000);
     expect(notify).toHaveBeenCalledTimes(1);
   });
 });
@@ -263,7 +263,7 @@ describe("purchase → DataImpulse adapter (mocked API), chosen per product", ()
       expect(r1.order.status).toBe("fulfilled");
       expect(r1.order.provider).toBe("dataimpulse");
       expect(notify).not.toHaveBeenCalled();
-      expect(await balance(pool, u)).toBe(3_000_000 - 1_300_000);
+      expect(await balance(pool, u)).toBe(3_000_000 - 1_400_000);
 
       const create = api.calls.find((c) => c.path === "/sub-user/create");
       expect(create?.body).toMatchObject({ pool_type: "residential", threads: 50, label: `sp-${u}`.slice(0, 60) });
@@ -334,7 +334,7 @@ describe("row level security", () => {
   it("customers read only their own rows and cannot write balances or call money functions", async () => {
     const a = await createUser(pool, "rls-a@example.com");
     const b = await createUser(pool, "rls-b@example.com");
-    await fund(a, 650_000);
+    await fund(a, 700_000);
     await purchase({ store, notify: async () => ({ telegram: false, email: false }), providers: [okPsx()] }, { userId: a, productId: "residential", countryCode: null, quantityGb: 1 });
 
     const c = await pool.connect();
