@@ -4,12 +4,14 @@ import { getCatalog } from "@/lib/catalog";
 import { Pricing } from "@/components/landing/Pricing";
 import { Faq, CtaBand } from "@/components/landing/Sections";
 import { faqItems, countryList } from "@/components/landing/faq";
+import { PrivateModems } from "@/components/landing/PrivateModems";
+import { getPublicModemOffer } from "@/lib/modem-public";
 
 export const revalidate = 300;
-export const metadata = { title: "Pricing", description: "Residential and mobile proxies priced per GB, paid in naira or USDT." };
+export const metadata = { title: "Pricing", description: "Residential and mobile proxies priced per GB, plus private 4G/5G modems by the day, week or month. Paid in naira or USDT." };
 
 export default async function PricingPage() {
-  const { products, countries } = await getCatalog();
+  const [{ products, countries }, modems] = await Promise.all([getCatalog(), getPublicModemOffer()]);
   const email = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@example.com";
   const priceProducts = products.map(({ id, name, description, price_per_gb_kobo, min_gb, max_gb }) => ({ id, name, description, price_per_gb_kobo, min_gb, max_gb }));
   return (
@@ -27,6 +29,11 @@ export default async function PricingPage() {
               </p>
             </div>
             <Pricing products={priceProducts} countryCount={countries.length} />
+          </div>
+        </section>
+        <section className="section-y border-t border-line">
+          <div className="container-x">
+            <PrivateModems offer={modems} />
           </div>
         </section>
         <Faq items={faqItems(countryList(countries))} />
