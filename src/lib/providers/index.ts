@@ -2,6 +2,7 @@ import { dataimpulse, proxiesSx } from "@/lib/env";
 import { DataImpulseProvider } from "./dataimpulse";
 import { genericProxyString } from "./generic";
 import { ProxiesSxProvider } from "./proxiessx";
+import { ProxiesSxModemsApi } from "./proxiessx-modems";
 import { ProxiesSxPortsApi } from "./proxiessx-ports";
 import type { AccountForString, ProxyProvider, ProxyStringOptions } from "./types";
 
@@ -31,6 +32,16 @@ export function getPortsApi(): ProxiesSxPortsApi {
     portsApi = new ProxiesSxPortsApi({ apiKey: c.apiKey, apiBase: c.apiBase });
   }
   return portsApi;
+}
+
+let modemsApi: ProxiesSxModemsApi | null = null;
+/** Proxies.sx private modems API. Same PROXIES_SX_API_KEY (needs the modems:purchase scope to buy/renew). */
+export function getModemsApi(): ProxiesSxModemsApi {
+  if (!modemsApi) {
+    const c = proxiesSx();
+    modemsApi = new ProxiesSxModemsApi({ apiKey: c.apiKey, apiBase: c.apiBase });
+  }
+  return modemsApi;
 }
 
 export function getProvider(id: string, providers = getProviders()): ProxyProvider | undefined {
