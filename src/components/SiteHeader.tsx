@@ -6,6 +6,7 @@ import { HeaderShadow } from "./HeaderShadow";
 export const NAV_ITEMS = [
   { href: "/#features", label: "Features" },
   { href: "/#pricing", label: "Pricing" },
+  { href: "/#private-modems", label: "Private modems" },
   { href: "/#how", label: "How it works" },
   { href: "/#locations", label: "Locations" },
   { href: "/#faq", label: "FAQ" },
