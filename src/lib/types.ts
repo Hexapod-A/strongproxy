@@ -57,7 +57,7 @@ export type DedicatedPort = {
   created_at: string;
 };
 
-export type OrderKind = "gb" | "port" | "port_renewal";
+export type OrderKind = "gb" | "port" | "port_renewal" | "modem" | "modem_renewal";
 
 export type Profile = {
   id: string;
@@ -86,6 +86,16 @@ export type Order = {
   port_days?: number | null;
   port_protocol?: string | null;
   dedicated_port_id?: string | null;
+  /** Private modem orders (kind 'modem' / 'modem_renewal'). */
+  modem_period?: "day" | "week" | "month" | null;
+  modem_country?: string | null;
+  modem_country_name?: string | null;
+  modem_carrier?: string | null;
+  modem_tariff_id?: string | null;
+  modem_price_usd?: number | string | null;
+  modem_cost_usd?: number | string | null;
+  private_modem_id?: string | null;
+  upstream_order_id?: string | null;
   unit_price_kobo: number;
   total_kobo: number;
   status: OrderStatus;
@@ -134,4 +144,32 @@ export type Payment = {
   status: "pending" | "success" | "failed";
   checkout_url: string | null;
   created_at: string;
+};
+
+export type PrivateModem = {
+  id: string;
+  user_id: string;
+  provider: string;
+  external_id: string;
+  order_id: string | null;
+  country_code: string;
+  country_name: string | null;
+  carrier_name: string | null;
+  period: "day" | "week" | "month";
+  http_host: string | null;
+  http_port: number | null;
+  http_username: string | null;
+  http_password: string | null;
+  socks_host: string | null;
+  socks_port: number | null;
+  socks_username: string | null;
+  socks_password: string | null;
+  rotate_token: string;
+  status: "active" | "expired" | "dead" | "replaced" | "cancelled";
+  online: boolean | null;
+  expires_at: string;
+  last_synced_at: string | null;
+  last_rotated_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
