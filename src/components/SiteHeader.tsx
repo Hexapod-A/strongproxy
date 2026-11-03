@@ -3,10 +3,10 @@ import { Logo } from "./Logo";
 import { MobileMenu } from "./MobileMenu";
 import { HeaderShadow } from "./HeaderShadow";
 
-export const NAV_ITEMS = [
+export const NAV_ITEMS: { href: string; label: string; wideOnly?: boolean }[] = [
   { href: "/#features", label: "Features" },
   { href: "/#pricing", label: "Pricing" },
-  { href: "/#private-modems", label: "Private modems" },
+  { href: "/#private-modems", label: "Private modems", wideOnly: true },
   { href: "/#how", label: "How it works" },
   { href: "/#locations", label: "Locations" },
   { href: "/#faq", label: "FAQ" },
@@ -18,14 +18,14 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
       <HeaderShadow />
       <div className="container-x flex h-16 items-center justify-between gap-4">
         <Logo />
-        <nav aria-label="Main" className="hidden items-center gap-0.5 md:flex">
+        <nav aria-label="Main" className="hidden items-center gap-0 lg:gap-0.5 md:flex">
           {NAV_ITEMS.map((n) => (
-            <Link key={n.href} href={n.href} className="nav-link">
+            <Link key={n.href} href={n.href} className={`nav-link whitespace-nowrap ${n.wideOnly ? "hidden lg:inline-flex" : ""}`}>
               {n.label}
             </Link>
           ))}
         </nav>
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden shrink-0 items-center gap-2 whitespace-nowrap md:flex">
           {signedIn ? (
             <Link href="/dashboard" className="btn-primary btn-sm">
               Dashboard
