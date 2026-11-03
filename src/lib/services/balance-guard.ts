@@ -73,7 +73,7 @@ async function recordTransition(deps: GuardDeps, below: boolean, usd: number, th
   await deps.notify(
     below ? `Sales PAUSED: Proxies.sx balance $${usd.toFixed(2)}` : `Sales resumed: Proxies.sx balance $${usd.toFixed(2)}`,
     below
-      ? `Your Proxies.sx balance is $${usd.toFixed(2)}, below your $${threshold.toFixed(2)} threshold.\nMobile, residential (Proxies.sx) and daily ports now show "temporarily unavailable" and nobody can be charged.\nTop up Proxies.sx and sales resume on their own within a minute. Change the threshold in Admin > Daily ports.`
+      ? `Your Proxies.sx balance is $${usd.toFixed(2)}, below your $${threshold.toFixed(2)} threshold.\nMobile, residential (Proxies.sx), private modems and daily ports now show "temporarily unavailable" and nobody can be charged.\nTop up Proxies.sx and sales resume on their own within a minute. Change the threshold in Admin > Private modems.`
       : `Your Proxies.sx balance is back to $${usd.toFixed(2)} (threshold $${threshold.toFixed(2)}). Sales are open again.`,
   );
 }
