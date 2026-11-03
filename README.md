@@ -197,6 +197,36 @@ All editable in **Admin → Daily ports** (price, GB, on/off; GB 0 = no cap), pl
 4. Whether the customer **traffic quota** hard-stops traffic when used up, and whether an API key needs `ports:rotate` / `billing:read` scopes (create the key with all of: `customers:read customers:write ports:read ports:write ports:rotate billing:read`).
 5. `expiresAt` format (examples use epoch ms; ISO is accepted too). Idempotency-Key on ports is not documented (sent anyway, harmless).
 
+## Private modems (Proxies.sx: a whole 4G/5G modem by day, week or month)
+
+A private modem is one whole carrier modem rented to one customer, with unlimited traffic. Proxies.sx charges your
+Proxies.sx balance its catalog price for the line (country + carrier + period); the customer pays **your** price from
+the StrongProxy wallet in naira.
+
+- **Your prices:** one USD price per period (default **$10/day, $30/week, $115/month**), edited in Admin > Private
+  modems. Naira = USD x the "₦ per $1" rate on the Admin overview, rounded up to the next ₦100. Any line can get its
+  own price (e.g. US at $28/day) or be hidden.
+- **Margin guard:** a line is only sold while Proxies.sx's live price is below your price (by more than the optional
+  minimum profit). Every other line is hidden from customers and shown in admin as "Blocked: no profit", with cost,
+  your price and profit per line. The database function `place_modem_order` refuses cost >= price as a second lock.
+- **Live stock:** read from `GET /v1/private-modems/catalog` (cached 60 s for pages, read fresh for every buy).
+  Without an API key the site shows the public price list (`GET /v1/pricing`) so pages render, but nothing can be bought.
+- **Fully automatic:** wallet debit -> `POST /v1/private-modems/orders {tariffId, expectedPriceUsd}` with our order id
+  as the Idempotency-Key -> poll `/v1/private-modems/mine` (up to 45 s) -> HTTP + SOCKS5 logins on the dashboard.
+  A refusal (no_stock, price_changed, insufficient_balance ...) or a failed setup refunds the wallet at once and alerts
+  you. A setup that takes longer stays "Setting up" and is finished on the next page view; an order Proxies.sx never
+  confirmed is re-sent with the same Idempotency-Key (never a second rental) and refunded after 30 minutes.
+- **Customer tools:** copy host:port:user:pass (HTTP or SOCKS5), "Change IP now" button, a private change-IP link
+  (`/api/modems/rotate/<token>`, our own, so the supplier's link is never shown), live countdown, renew from the wallet.
+- **Auto-pause:** respects the same low-balance pause as everything else (threshold now also editable on this page).
+- **Setup:** run `supabase/migrations/20261103000005_private_modems.sql` once in the Supabase SQL editor. The API key
+  needs the `modems:purchase` scope (client.proxies.sx > Account > API keys). Leave Proxies.sx auto-renew OFF:
+  customers renew from their wallet here.
+
+Unverified until a live key is used (see `src/lib/providers/proxiessx-modems.ts`): how a finished order names its
+modem (we try `GET /private-modems/orders/:id`, then the order id on `/mine`, then the matching unowned modem), the
+exact item shape inside `openOrders`/`recentFailed`, and whether a reseller pays exactly the catalog price.
+
 ## Low-balance auto-pause
 
 Every Proxies.sx sale (per-GB keys **and** daily ports) is paid from **your** Proxies.sx balance. The app reads it from `GET /account/summary`
