@@ -7,6 +7,7 @@ const COLS: { title: string; links: { href: string; label: string }[] }[] = [
     links: [
       { href: "/#pricing", label: "Mobile proxies" },
       { href: "/#pricing", label: "Residential proxies" },
+      { href: "/pricing#private-modems", label: "Private modems" },
       { href: "/pricing", label: "Pricing" },
       { href: "/signup", label: "Sign up" },
     ],
