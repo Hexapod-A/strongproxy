@@ -2,6 +2,7 @@ import pg from "pg";
 import fs from "node:fs";
 import path from "node:path";
 import type { Store } from "@/lib/store";
+import type { Order, PrivateModem } from "@/lib/types";
 import { errorCode, StoreError } from "@/lib/store";
 
 pg.types.setTypeParser(20, (v) => Number(v)); // int8 -> number (kobo fits easily)
@@ -21,7 +22,7 @@ export async function freshDatabase(): Promise<pg.Pool> {
   const url = new URL(ADMIN_URL);
   url.pathname = "/" + DB_NAME;
   const pool = new pg.Pool({ connectionString: url.toString(), max: 4 });
-  for (const f of ["test/sql/supabase_shim.sql", "supabase/migrations/20261013000001_init.sql", "supabase/migrations/20261013000002_providers_no_manual.sql", "supabase/migrations/20261014000003_day_ports.sql", "supabase/seed.sql"]) {
+  for (const f of ["test/sql/supabase_shim.sql", "supabase/migrations/20261013000001_init.sql", "supabase/migrations/20261013000002_providers_no_manual.sql", "supabase/migrations/20261014000003_day_ports.sql", "supabase/seed.sql", "supabase/migrations/20261103000005_private_modems.sql"]) {
     await pool.query(fs.readFileSync(path.join(ROOT, f), "utf8"));
   }
   return pool;
@@ -84,6 +85,23 @@ export function pgStore(pool: pg.Pool): Store {
     },
     async getProviderCustomer(userId, provider) {
       return (await one<{ external_id: string }>("select external_id from provider_customers where user_id = $1 and provider = $2", [userId, provider]))?.external_id ?? null;
+    },
+    async getPrivateModem(id) {
+      return (await one<PrivateModem>("select * from private_modems where id = $1", [id])) ?? null;
+    },
+    async findPrivateModem(by) {
+      return (
+        ("rotateToken" in by
+          ? await one<PrivateModem>("select * from private_modems where rotate_token = $1", [by.rotateToken])
+          : await one<PrivateModem>("select * from private_modems where provider = $1 and external_id = $2", [by.provider, by.externalId])) ?? null
+      );
+    },
+    async listOpenModemOrders(userId) {
+      const r = await pool.query(
+        "select * from orders where kind in ('modem','modem_renewal') and status = 'processing' and ($1::uuid is null or user_id = $1) order by created_at limit 50",
+        [userId],
+      );
+      return r.rows as Order[];
     },
   };
 }
