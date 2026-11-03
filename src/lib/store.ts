@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Country, DedicatedPort, Order, PortPlan, Product, Profile, ProxyAccount } from "./types";
+import type { Country, DedicatedPort, Order, PortPlan, PrivateModem, Product, Profile, ProxyAccount } from "./types";
 
 /**
  * The narrow data interface the business services need. Production uses Supabase (service role);
@@ -19,6 +19,10 @@ export interface Store {
   getDedicatedPort(id: string): Promise<DedicatedPort | null>;
   findDedicatedPort(by: { provider: string; externalId: string } | { rotateToken: string }): Promise<DedicatedPort | null>;
   getProviderCustomer(userId: string, provider: string): Promise<string | null>;
+  getPrivateModem(id: string): Promise<PrivateModem | null>;
+  findPrivateModem(by: { provider: string; externalId: string } | { rotateToken: string }): Promise<PrivateModem | null>;
+  /** Private-modem orders still being set up (status 'processing'); all users when userId is null. */
+  listOpenModemOrders(userId: string | null): Promise<Order[]>;
 }
 
 export class StoreError extends Error {
@@ -48,6 +52,9 @@ export function errorCode(e: unknown): string {
     "invalid_protocol",
     "port_not_found",
     "port_not_renewable",
+    "modem_not_found",
+    "modem_not_renewable",
+    "renewal_in_progress",
   ];
   return known.find((k) => msg.includes(k)) ?? "unknown_error";
 }
@@ -112,6 +119,22 @@ export function supabaseStore(db: SupabaseClient): Store {
     async getProviderCustomer(userId, provider) {
       const { data } = await db.from("provider_customers").select("external_id").eq("user_id", userId).eq("provider", provider).maybeSingle();
       return (data?.external_id as string | undefined) ?? null;
+    },
+    async getPrivateModem(id) {
+      const { data } = await db.from("private_modems").select("*").eq("id", id).maybeSingle();
+      return (data as PrivateModem) ?? null;
+    },
+    async findPrivateModem(by) {
+      let q = db.from("private_modems").select("*");
+      q = "rotateToken" in by ? q.eq("rotate_token", by.rotateToken) : q.eq("provider", by.provider).eq("external_id", by.externalId);
+      const { data } = await q.maybeSingle();
+      return (data as PrivateModem) ?? null;
+    },
+    async listOpenModemOrders(userId) {
+      let q = db.from("orders").select("*").in("kind", ["modem", "modem_renewal"]).eq("status", "processing");
+      if (userId) q = q.eq("user_id", userId);
+      const { data } = await q.order("created_at", { ascending: true }).limit(50);
+      return (data as Order[]) ?? [];
     },
   };
 }
