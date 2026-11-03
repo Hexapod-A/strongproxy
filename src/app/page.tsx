@@ -8,11 +8,13 @@ import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Pricing } from "@/components/landing/Pricing";
 import { UseCases, Locations, Faq, CtaBand } from "@/components/landing/Sections";
 import { faqItems, countryList } from "@/components/landing/faq";
+import { PrivateModems } from "@/components/landing/PrivateModems";
+import { getPublicModemOffer } from "@/lib/modem-public";
 
 export const revalidate = 300;
 
 export default async function Home() {
-  const { products, countries } = await getCatalog();
+  const [{ products, countries }, modems] = await Promise.all([getCatalog(), getPublicModemOffer()]);
   const flags = Object.fromEntries(countries.map((c) => [c.code, flag(c.code)]));
   const email = process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@example.com";
   const priceProducts = products.map(({ id, name, description, price_per_gb_kobo, min_gb, max_gb }) => ({ id, name, description, price_per_gb_kobo, min_gb, max_gb }));
@@ -34,6 +36,9 @@ export default async function Home() {
               <p data-reveal className="mt-4 text-[17px] text-ink-2">Pay only for the data you use. No plans, no hidden fees.</p>
             </div>
             <Pricing products={priceProducts} countryCount={countries.length} />
+            <div className="mt-20 sm:mt-24">
+              <PrivateModems offer={modems} />
+            </div>
           </div>
         </section>
         <UseCases />
