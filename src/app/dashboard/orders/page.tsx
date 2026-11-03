@@ -4,7 +4,7 @@ import { StatusPill } from "@/components/StatusPill";
 import { requireUser } from "@/lib/auth";
 import { formatNaira } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
-import { orderGb, orderTitle } from "@/lib/order-label";
+import { isModemOrder, orderGb, orderTitle } from "@/lib/order-label";
 import type { Order } from "@/lib/types";
 
 export const metadata = { title: "Orders" };
@@ -21,6 +21,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const list = (orders ?? []) as Order[];
   const pname = (id: string) => products?.find((p) => p.id === id)?.name ?? id;
   const cname = (c: string | null) => (c ? countries?.find((x) => x.code === c)?.name ?? c.toUpperCase() : "Any");
+  const where = (o: Order) => (isModemOrder(o) ? (o.modem_country_name ?? (o.modem_country ?? "").toUpperCase()) : cname(o.country_code));
   const placedOrder = list.find((o) => o.id === placed);
 
   return (
@@ -47,7 +48,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                   <StatusPill status={o.status} failed={Boolean(o.failure_reason)} />
                 </div>
                 <div className="mt-1 flex justify-between text-muted">
-                  <span>{cname(o.country_code)} · {new Date(o.created_at).toLocaleDateString("en-NG", { dateStyle: "medium" })}</span>
+                  <span>{where(o)} · {new Date(o.created_at).toLocaleDateString("en-NG", { dateStyle: "medium" })}</span>
                   <span className="font-mono text-ink">{formatNaira(o.total_kobo)}</span>
                 </div>
               </li>
@@ -63,7 +64,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                   <tr key={o.id}>
                     <td className="whitespace-nowrap text-muted">{new Date(o.created_at).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" })}</td>
                     <td className="font-medium">{o.kind === "gb" || !o.kind ? pname(o.product_id ?? "") : orderTitle(o, pname)}</td>
-                    <td>{cname(o.country_code)}</td>
+                    <td>{where(o)}</td>
                     <td>{orderGb(o)}</td>
                     <td className="font-mono">{formatNaira(o.total_kobo)}</td>
                     <td><StatusPill status={o.status} failed={Boolean(o.failure_reason)} /></td>
