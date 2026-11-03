@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { formatNaira } from "@/lib/money";
 import { getProvider } from "@/lib/providers";
 import { createAdminClient } from "@/lib/supabase/server";
-import { orderTitle } from "@/lib/order-label";
+import { isModemOrder, orderTitle } from "@/lib/order-label";
 import type { Order } from "@/lib/types";
 import { refundOrderAction } from "../actions";
 
@@ -22,6 +22,7 @@ const KINDS = [
   ["all", "All products"],
   ["gb", "Per-GB"],
   ["port", "Daily ports"],
+  ["modem", "Private modems"],
 ] as const;
 
 export default async function AdminOrders({ searchParams }: { searchParams: Promise<{ status?: string; kind?: string }> }) {
@@ -31,6 +32,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
   if (status === "fulfilled" || status === "processing" || status === "refunded") q = q.eq("status", status);
   if (kind === "gb") q = q.eq("kind", "gb");
   if (kind === "port") q = q.in("kind", ["port", "port_renewal"]);
+  if (kind === "modem") q = q.in("kind", ["modem", "modem_renewal"]);
   const [{ data: orders }, { data: products }, { data: countries }] = await Promise.all([q, db.from("products").select("id,name"), db.from("countries").select("code,name")]);
   const list = (orders ?? []) as Order[];
   const ids = [...new Set(list.map((o) => o.user_id))];
@@ -71,17 +73,18 @@ export default async function AdminOrders({ searchParams }: { searchParams: Prom
       <div className="space-y-4">
         {list.map((o) => {
           const product = products?.find((p) => p.id === o.product_id);
-          const country = o.country_code ? (countries?.find((c) => c.code === o.country_code)?.name ?? o.country_code) : "Any country";
+          const country = isModemOrder(o) ? (o.modem_country_name ?? (o.modem_country ?? "").toUpperCase()) : o.country_code ? (countries?.find((c) => c.code === o.country_code)?.name ?? o.country_code) : "Any country";
           const providerLabel = o.provider ? (getProvider(o.provider)?.label ?? o.provider) : null;
           return (
             <article key={o.id} className="card">
               <header className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
                 <div className="min-w-0">
                   <p className="font-semibold">
-                    {orderTitle(o, () => product?.name ?? o.product_id ?? "")} · {country}
+                    {orderTitle(o, () => product?.name ?? o.product_id ?? "")}{isModemOrder(o) ? "" : ` · ${country}`}
                   </p>
                   <p className="mt-0.5 text-sm text-muted">
                     {email(o.user_id)} · {formatNaira(o.total_kobo)}
+                    {isModemOrder(o) && o.modem_cost_usd !== null && o.modem_cost_usd !== undefined ? ` · cost $${Number(o.modem_cost_usd).toFixed(2)} / price $${Number(o.modem_price_usd ?? 0).toFixed(2)}` : ""}
                     {providerLabel ? ` · ${providerLabel}` : ""} ·{" "}
                     {new Date(o.created_at).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" })}
                   </p>
